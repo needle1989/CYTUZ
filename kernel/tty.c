@@ -73,7 +73,7 @@ PUBLIC void task_tty()
 	TTY *	tty;
 	MESSAGE msg;
 
-	init_keyboard();
+	kbInitial();
 
 	for (tty = TTY_FIRST; tty < TTY_END; tty++)
 		init_tty(tty);
@@ -237,7 +237,7 @@ PRIVATE void put_key(TTY* tty, u32 key)
 PRIVATE void tty_dev_read(TTY* tty)
 {
 	if (is_current_console(tty->console))
-		keyboard_read(tty);
+		kbRead(tty);
 }
 
 
