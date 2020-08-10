@@ -116,17 +116,21 @@
 #define PAD_DEL		PAD_DOT			/* Del		*/
 
 
-/************************************************************************/
-/*                         Stucture Definition                          */
-/************************************************************************/
-/* Keyboard structure, 1 per console. */
-struct kb_inbuf {
-	char*	p_head;			/* 指向缓冲区中下一个空闲位置 */
-	char*	p_tail;			/* 指向键盘任务应处理的字节 */
-	int	count;			/* 缓冲区中共有多少字节 */
-	char	buf[KB_IN_BYTES];	/* 缓冲区 */
+
+struct kbInbuf {
+	// 缓冲区头
+	char* head;
+	// 缓冲区尾
+	char* tail;
+	// 字节数
+	int	count;
+	// 缓冲区
+	char	buf[KB_IN_BYTES];
 };
 
-
+PRIVATE u8 getByteFromKbBuffer();
+PRIVATE void setLeds();
+PRIVATE void kbWait();
+PRIVATE void kbAck();
 
 #endif /* _ORANGES_KEYBOARD_H_ */
