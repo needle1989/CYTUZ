@@ -138,18 +138,21 @@ PUBLIC void addTwoString(char *to_str,char *from_str1,char *from_str2){
 *======================================================================*/
 void displayWelcomeInfo() 
 {
-    printf("   ===========================================================          \n");
-    printf("             **       * *       ***       * *       ***               \n");
-    printf("            *          *         *        * *        *                \n");
-    printf("             **        *         *        ***       ***               \n");
-    printf("   ===========================================================          \n");
-    printf("                                             \n");
-    printf("                     OPERATING        SYSTEM               \n");
-    printf("                                             \n");
-    printf("                     INITIALIZATION COMPLETE               \n");
-    printf("                                             \n");
-    printf("                         Welcome to CYTUZ                   \n");
-    printf("                Enter 'help' to show help message.    \n");
+    printf("   |=========================================================================|\n");
+    printf("   |=========================================================================|\n");
+    printf("   |               **       * *       ***       * *       ***                |\n");
+    printf("   |              *          *         *        * *        *                 |\n");
+    printf("   |               **        *         *        ***       ***                |\n");
+    printf("   |=========================================================================|\n");
+    printf("   |                                                                         |\n");
+    printf("   |                        OPERATING        SYSTEM                          |\n");
+    printf("   |                                                                         |\n");
+    printf("   |                        INITIALIZATION COMPLETE                          |\n");
+    printf("   |                                                                         |\n");
+    printf("   |                           Welcome to CYTUZ                              |\n");
+    printf("   |                      Enter 'help' to show commands.                     |\n");
+    printf("   |=========================================================================|\n");
+    printf("   |=========================================================================|\n");
     printf("\n\n\n\n");
 
 
@@ -308,24 +311,31 @@ void doEncrypt(char *path, int fd_stdin)
 
 void help()
 {
-    printf("=============================help information==================================\n");
-    printf("***********  Commands  ***********|***************  description  *************\n");
-    printf("                          \n");
-    printf("1.  help                          : Show this help message\n");
-    printf("2.  clear                         : Clear the screen\n");
-    printf("3.  process                       : A process manage, show you all process-info\n");
-    printf("*********************** COMMANDS FOR FILE SYS *****************************\n");
-    printf("4.  ls                            : List files in current directory\n");
-    printf("5.  create      [file]            : Create a new file\n");
-    printf("6.  cat         [file]            : Print the file\n");
-    printf("7.  vi          [file]            : Modify the content of the file\n");
-    printf("8.  delete      [file]            : Delete a file\n");
-    printf("9.  cp          [SOURCE] [DEST]   : Copy a file\n");
-    printf("10. mv          [SOURCE] [DEST]   : Move a file\n");   
-    printf("11. encrypt     [file]            : Encrypt a file\n");
-    printf("12. cd          [pathname]        : Change the directory\n");
-    printf("13. mkdir       [directory name]  : Create a new directory in current directory\n");
-    printf("==============================================================================\n");
+    printf("   |=========================================================================|\n");
+    printf("   |======================= C     Y     T     U     Z =======================|\n");
+    printf("   |=========================================================================|\n");
+    printf("   |                                                                         |\n");
+    printf("   |************************* COMMANDS FOR SYSTEM ***************************|\n");
+    printf("   |                                                                         |\n");
+    printf("   |                               help : Show CYTUZ commands                |\n");
+    printf("   |                              clear : Clear the screen                   |\n");
+    printf("   |                            process : Show process manager               |\n");
+    printf("   |                                                                         |\n");
+    printf("   |************************* COMMANDS FOR FILE SYSTEM **********************|\n");
+    printf("   |                                 ls : List files in current directory    |\n");
+    printf("   |                             create : Create a new file                  |\n");
+    printf("   |                                cat : Print the file                     |\n");
+    printf("   |                                 vi : Modify the content of the file     |\n");
+    printf("   |                             delete : Delete a file                      |\n");
+    printf("   |                                 cp : Copy a file                        |\n");
+    printf("   |                                 mv : Move a file                        |\n");   
+    printf("   |                             encypt : Encrypt a file                     |\n");
+    printf("   |                                 cd : Change the directory               |\n");
+    printf("   |                              mkdir : Create a new directory             |\n");
+    printf("   |                                                                         |\n");
+    printf("   |************************* COMMANDS FOR USER APPLICATIONS ****************|\n");
+    printf("   |                        minesweeper : Launch Minesweeper                 |\n");
+    printf("   |=========================================================================|\n");
 }
 
 void ProcessManage()
@@ -548,7 +558,211 @@ void game(int fd_stdin){
         }
 	}	
 }
+/*****************************************************************************
+ *                                game code for Minesweeper
+ *****************************************************************************/
+#define rows 11
+#define cols 11
+#define Count 10
 
+char mine[rows][cols];
+char show[rows][cols];
+
+void sl_init()
+{
+	int i = 0;
+	int j = 0;
+	for (i = 0; i < rows - 1; i++)
+	{
+		for (j = 0; j < cols - 1; j++)
+		{
+			mine[i][j] = '0';
+			show[i][j] = '*';
+		}
+	}
+}
+
+void sl_set_mine()
+{
+    int x = 0;
+    int y = 0;
+    int count = 10;//雷总数
+    while (count)//雷布完后跳出循环
+    {
+        int x = rand() % 10 + 1;//产生1到10的随机数，在数组下标为1到10的范围内布雷
+        int y = rand() % 10 + 1;//产生1到10的随机数，在数组下标为1到10的范围内布雷
+        if (mine[x][y] == '0')//找不是雷的地方布雷
+        {
+            mine[x][y] = '1';
+            count--;
+        }
+    }
+}
+
+
+void sl_display(char a[rows][cols])
+{
+	clear();
+	printf("   |=========================================================================|\n");
+	printf("   |======================= Minesweeper for CYTUZ ===========================|\n");
+	printf("   |=========================================================================|\n");
+	printf("   |                                   1. 10 bombs total                     |\n");
+	printf("   |                              2. Enter 1-9 row number                    |\n");
+	printf("   |                         3. Enter 1-9 col number                         |\n");
+	printf("   |                    4. Enter q to quit                                   |\n");
+	printf("   |=========================================================================|\n");
+	printf("   |=========================================================================|\n");
+	int i = 0;
+	int j = 0;
+	printf("\n");
+	printf(" ");
+	for (i = 1; i < cols - 1; i++)
+	{
+		printf(" %d ", i);
+	}
+	printf("\n");
+	for (i = 1; i < rows - 1; i++)
+	{
+		printf("%d", i);
+		for (j = 1; j < cols - 1; j++)
+		{
+			printf(" %c ", a[i][j]);
+		}
+		printf("\n");
+	}
+}
+
+  
+int sl_get_num(int x, int y)
+{
+	int count = 0;
+	if (mine[x - 1][y - 1] == '1')
+	{
+		count++;
+	}
+	if (mine[x - 1][y] == '1')
+	{
+		count++;
+	}
+	if (mine[x - 1][y + 1] == '1')
+	{
+		count++;
+	}
+	if (mine[x][y - 1] == '1')  
+	{
+		count++;
+	}
+	if (mine[x][y + 1] == '1')  
+	{
+		count++;
+	}
+	if (mine[x + 1][y - 1] == '1')  
+	{
+		count++;
+	}
+	if (mine[x + 1][y] == '1')  
+	{
+		count++;
+	}
+	if (mine[x + 1][y + 1] == '1')  
+	{
+		count++;
+	}
+	return  count;
+}
+  
+int sl_sweep()
+{
+	int count = 0;
+	int x = 0, y = 0;
+	char cx[2], cy[2];
+	while (count != ((rows - 2)*(cols - 2) - Count))
+	{
+		printf("Please input row number: ");
+		int r = read(0, cx, 2);
+		if (cx[0] == 'q')
+			return 0;
+		x = cx[0] - '0';
+		while (x <= 0 || x > 9)
+		{
+			printf("Wrong Input!\n");
+			printf("Please input row number: ");
+			r = read(0, cx, 2);
+			if (cx[0] == 'q')
+				return 0;
+			x = cx[0] - '0';
+		}
+
+		printf("Please input col number: ");
+		r = read(0, cy, 2);
+		if (cy[0] == 'q')
+			return 0;
+		y = cy[0] - '0';
+		while (y <= 0 || y > 9)
+		{
+			printf("Wrong Input!\n");
+			printf("Please input col number: ");
+			r = read(0, cy, 2);
+			if (cy[0] == 'q')
+				return 0;
+			y = cy[0] - '0';
+		}
+
+		if (mine[x][y] == '1')
+		{
+			sl_display(mine);
+			printf("Nerf this! Game Over!\n");
+
+			return 0;
+		}
+		else
+		{
+			int ret = sl_get_num(x, y);
+			show[x][y] = ret + '0';
+			sl_display(show);
+			count++;
+		}
+	}
+	printf("YOU WIN!\n");
+	sl_display(mine);
+	return 0;
+}
+
+int runMine(fd_stdin, fd_stdout)
+{
+	printf("   |=========================================================================|\n");
+	printf("   |======================= Minesweeper for CYTUZ ===========================|\n");
+	printf("   |=========================================================================|\n");
+	printf("   |                                   1. 10 bombs total                     |\n");
+	printf("   |                              2. Enter 1-9 row number                    |\n");
+	printf("   |                         3. Enter 1-9 col number                         |\n");
+	printf("   |                    4. Enter q to quit                                   |\n");
+	printf("   |=========================================================================|\n");
+	printf("   |=========================================================================|\n");
+        
+	
+	
+
+	sl_init();
+	sl_set_mine();
+	sl_display(show);
+	sl_sweep();
+
+	printf("\nEnter anything to continue...");
+	char rdbuf[128];
+	int r = read(fd_stdin, rdbuf, 70);
+	rdbuf[r] = 0;
+	while (r < 1)
+	{
+		r = read(fd_stdin, rdbuf, 70);
+	}
+	clear();
+	printf("\n");
+	return 0;
+}
+ /*****************************************************************************
+ *                                shell
+ *****************************************************************************/
 void shell(char *tty_name){
 	 int fd;
 
@@ -825,8 +1039,8 @@ void shell(char *tty_name){
         {
             doTest(arg1);
         }
-        else if (strcmp(cmd, "game") == 0){
-        	game(fd_stdin);
+        else if (strcmp(cmd, "minesweeper") == 0){
+        	runMine(fd_stdin, fd_stdout);
         }
         else if (strcmp(cmd, "mkdir") == 0){
             i = j =0;
