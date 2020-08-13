@@ -35,10 +35,6 @@ PUBLIC int kernel_main()
 	int   i, j;
 	int   prio;
 	for (i = 0; i < NR_TASKS+NR_PROCS; i++) {
-		if (i >= NR_TASKS + NR_NATIVE_PROCS) {
-			p->p_flags = FREE_SLOT;
-			continue;
-		}
 	        if (i < NR_TASKS) {     /* 任务 */
                         p_task    = task_table + i;
                         privilege = PRIVILEGE_TASK;
@@ -56,7 +52,7 @@ PUBLIC int kernel_main()
 
 		strcpy(p_proc->name, p_task->name);	/* name of the process */
 		p_proc->pid = i;			/* pid */
-		if (strcmp(p_task->name, "INIT") != 0) {
+
 		p_proc->ldt_sel = selector_ldt;
 
 		memcpy(&p_proc->ldts[0], &gdt[SELECTOR_KERNEL_CS >> 3],
@@ -65,20 +61,6 @@ PUBLIC int kernel_main()
 		memcpy(&p_proc->ldts[1], &gdt[SELECTOR_KERNEL_DS >> 3],
 		       sizeof(struct descriptor));
 		p_proc->ldts[1].attr1 = DA_DRW | privilege << 5;
-		}
-		else {		/* INIT process */
-			unsigned int k_base;
-			unsigned int k_limit;
-			int ret = get_kernel_map(&k_base, &k_limit);
-			assert(ret == 0);
-			init_desc(&p->ldts[INDEX_LDT_C],
-				  (k_base + k_limit) >> LIMIT_4K_SHIFT,
-				  DA_32 | DA_LIMIT_4K | DA_C | priv << 5);
-
-			init_desc(&p->ldts[INDEX_LDT_RW],
-				  (k_base + k_limit) >> LIMIT_4K_SHIFT,
-				  DA_32 | DA_LIMIT_4K | DA_DRW | priv << 5);
-		}
 		p_proc->regs.cs	= (0 & SA_RPL_MASK & SA_TI_MASK) | SA_TIL | rpl;
 		p_proc->regs.ds	= (8 & SA_RPL_MASK & SA_TI_MASK) | SA_TIL | rpl;
 		p_proc->regs.es	= (8 & SA_RPL_MASK & SA_TI_MASK) | SA_TIL | rpl;
@@ -149,28 +131,6 @@ PUBLIC void addTwoString(char *to_str,char *from_str1,char *from_str2){
     while(from_str2[i]!=0)
         to_str[j++]=from_str2[i++];
     to_str[j]=0;
-}
-/*======================================================================*
-                            init
-*======================================================================*/
-void Init()
-{
-	int fd_stdin  = open("/dev_tty0", O_RDWR);
-	assert(fd_stdin  == 0);
-	int fd_stdout = open("/dev_tty0", O_RDWR);
-	assert(fd_stdout == 1);
-
-	printf("Init() is running ...\n");
-
-	int pid = fork();
-	if (pid != 0) { /* parent process */
-		printf("parent is running, child pid:%d\n", pid);
-		spin("parent");
-	}
-	else {	/* child process */
-		printf("child is running, pid:%d\n", getpid());
-		spin("child");
-	}
 }
 
 /*======================================================================*
@@ -891,10 +851,6 @@ void shell(char *tty_name){
         else if (strcmp(cmd, "ls") == 0)
         {
             ls(current_dirr);
-        }
-        else if (strcmp(cmd, "init") == 0)
-        {
-            Init();
         }
         else if (strcmp(cmd, "create") == 0)
         {
