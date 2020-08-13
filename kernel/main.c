@@ -16,7 +16,7 @@
 #include "console.h"
 #include "global.h"
 #include "proto.h"
-
+#include "pch.h"
 
 /*======================================================================*
                             kernel_main
@@ -372,6 +372,7 @@ void help()
     printf("   |                             encypt : Encrypt a file                     |\n");
     printf("   |                                 cd : Change the directory               |\n");
     printf("   |                              mkdir : Create a new directory             |\n");
+    printf("   |                              init : to create a new child process       |\n");
     printf("   |                                                                         |\n");
     printf("   |************************* COMMANDS FOR USER APPLICATIONS ****************|\n");
     printf("   |                        minesweeper : Launch Minesweeper                 |\n");
@@ -735,7 +736,7 @@ int sl_sweep()
 
 		printf("Please input col number: ");
 		r = read(0, cy, 2);
-		if (cy[0] == 'q')
+		if (cy[0] == 'q')bochs -f bochsrc
 			return 0;
 		y = cy[0] - '0';
 		while (y <= 0 || y > 9)
@@ -799,6 +800,517 @@ int runMine(fd_stdin, fd_stdout)
 	clear();
 	printf("\n");
 	return 0;
+}
+ /*****************************************************************************
+ *                                Snake
+ *****************************************************************************/
+  POINT mouse_position;
+ RECT windows_position;
+int hardness=100;//难度设置
+
+enum Ch
+{
+	Up = 119,
+	Down = 115,
+	Left = 97,
+	Right = 100
+};
+enum Fish
+{
+	First = 1,
+	Second = 2
+};
+struct Loc
+{
+	int x;
+	int y;
+};
+struct score_store
+{
+	int n;
+	char name[20];
+};
+struct snake
+{
+	int n;
+	deque <Loc> sLc;
+	Loc slc;
+	Ch dir;
+}snake;
+struct food
+{
+	int flag;
+	Loc loc;
+}food;
+struct brick
+{
+	deque <Loc> blc;
+	Loc loc;
+	int n;
+}brick;
+struct power
+{
+	Loc loc;
+	int start;
+	int end;
+	int flat;
+	int state;
+}power;
+struct mouse
+{
+	POINT p;
+	Loc loc;
+	TCHAR score[30];
+	int flag;
+}mouse;
+struct file_score
+{
+	score_store rank[11];
+	wchar_t*Name;
+	size_t len;
+	size_t converted;
+	TCHAR number[30];
+}file_score;
+struct user
+{
+	char name[20];
+	char sign[100];
+	int flag;
+	wchar_t*Name;
+	size_t len;
+	size_t converted;
+}user;
+
+int main()
+{
+	initsnake();
+	locbrick();
+	srand((unsigned int) time(NULL));
+	setbkcolor(BLACK);
+	settextstyle(n_L/6, 0, L"微软雅黑");
+	cleardevice();
+	//outtextxy(120,120, L"Hello World");
+	outtextxy(n_L / 6, n_W / 4, L"Please enter");
+	outtextxy(n_L / 6, n_W / 2, L"Your name");
+	main_screen();
+	cleardevice();
+	outtextxy((n_L / 10), n_W / 40 * 5, L"Welcome");
+	user.len = strlen(user.name) + 1;
+	user.Name = (wchar_t*)malloc(user.len * sizeof(wchar_t));
+	mbstowcs_s(&user.converted, user.Name, user.len, user.name, _TRUNCATE);
+	outtextxy((n_L / 8), n_W / 40 * 19, user.Name);
+	
+	
+	
+	
+	while (1)
+	{
+		//if (_kbhit())
+			keyboard();
+		//rectangle(0, 0, 10, 10);
+			
+		//circle(120, 130, 50);&&!KEY_DOWN(MOUSE_MOVED)
+		while(!_kbhit())
+		{
+			if (food.flag == 0)
+			{
+				Locfood();
+			}
+			cleardevice();
+			spower();
+			Drawfood();
+			drawsnake();
+			drawbrick();
+			eatpower();
+			Eatfood();
+			movesnake();
+			encounter();
+			gscore();
+			Sleep(hardness);
+		}
+	}
+	return 0;
+}
+
+
+void initsnake()
+{
+	initgraph(n_L, n_W);
+	settextcolor(WHITE);
+	snake.n = 4;
+	brick.n = 30;
+	snake.dir = Right;
+	snake.sLc.resize(n_smlg);
+	power.flat = 0;
+	user.flag = 0;
+	snake.sLc[0].x = 50;
+	snake.sLc[0].y = 10;
+	snake.sLc[1].x = 40;
+	snake.sLc[1].y = 10;
+	snake.sLc[2].x = 30;
+	snake.sLc[2].y = 10;
+	snake.sLc[3].x = 20;
+	snake.sLc[3].y = 10;
+
+}
+
+void drawsnake()
+{
+	setlinecolor(RED);
+	setfillcolor(YELLOW);
+	fillroundrect(snake.sLc[0].x, snake.sLc[0].y, snake.sLc[0].x + 10, snake.sLc[0].y + 10,6,6);
+	setfillcolor(YELLOW);
+	for (int i=1;i<snake.n;i++)
+	{ 
+	fillrectangle(snake.sLc[i].x, snake.sLc[i].y, snake.sLc[i].x + 10, snake.sLc[i].y + 10);
+	}
+}
+
+void movesnake()
+{
+	snake.slc.x = snake.sLc[0].x;
+	snake.slc.y = snake.sLc[0].y;
+	snake.sLc.push_front(snake.slc);
+	snake.sLc.pop_back();
+	switch (snake.dir)
+	{
+	case Right:
+		snake.sLc[0].x += 10;
+		if (snake.sLc[0].x > n_L)
+		{
+			snake.sLc[0].x = 0;
+		}
+			break;
+	case Left:
+		snake.sLc[0].x -= 10;
+		if (snake.sLc[0].x < 0)
+		{
+			snake.sLc[0].x = n_L;
+		}
+			break;
+	case Up:
+		snake.sLc[0].y -= 10;
+		if (snake.sLc[0].y < 0)
+		{
+			snake.sLc[0].y = n_W;
+		}
+			break;
+	case Down:
+		snake.sLc[0].y += 10;
+		if (snake.sLc[0].y > n_W)
+		{
+			snake.sLc[0].y = 0;
+		}
+			break;
+	}
+}
+
+void keyboard()
+{
+	int dire;
+	dire = _getch();
+	switch (dire)
+	{
+	case Up:
+		if(snake.dir!=Down)
+		snake.dir = Up;
+		break;
+	case Down:
+		if (snake.dir != Up)
+		snake.dir = Down;
+		break;
+	case Left:
+		if (snake.dir != Right)
+		snake.dir = Left;
+		break;
+	case Right:
+		if (snake.dir != Left)
+		snake.dir = Right;
+		break;
+	}
+
+}
+
+void Locfood()
+{
+	while(1)
+	{ 
+		food.loc.x = rand() % (n_L/10)*10;
+		food.loc.y = rand() % (n_W/10)*10;
+		if (food.loc.x != snake.sLc[0].x||food.loc.y != snake.sLc[0].y)
+			break;
+	}
+	food.flag = 1;
+}
+
+void Drawfood()
+{
+	setfillcolor(LIGHTGREEN);
+	setlinecolor(LIGHTGREEN);
+	fillroundrect(food.loc.x, food.loc.y, food.loc.x + 10, food.loc.y + 10, 10, 10);
+
+}
+
+void Eatfood()
+{
+	if (snake.sLc[0].x == food.loc.x&&snake.sLc[0].y == food.loc.y)
+	{
+		snake.n++;
+		food.flag = 0;
+		snake.slc.x = snake.sLc[snake.n - 2].x;
+		snake.slc.y = snake.sLc[snake.n - 2].y;
+		snake.sLc.push_back(snake.slc);
+	}
+}
+
+void locbrick()
+{
+	for(int i=0;i<brick.n;i++)
+	{ 
+	brick.loc.x = rand() % (n_L / 10) * 10;
+	brick.loc.y = rand() % (n_L / 10) * 10;
+	brick.blc.push_back(brick.loc);
+	}
+}
+void drawbrick()
+{
+	setfillcolor(WHITE);
+	setlinecolor(BLUE);
+	for (int i = 0; i < brick.n; i++)
+	{
+		fillroundrect(brick.blc[i].x, brick.blc[i].y, brick.blc[i].x+10, brick.blc[i].y+10,2,2);
+	}
+}
+void encounter()
+{
+	for(int i=1;i<snake.n;i++)
+		if (snake.sLc[0].x == snake.sLc[i].x&&snake.sLc[0].y == snake.sLc[i].y)
+		{
+			if (power.state == 1  )
+			{
+				snake.n -= 1;
+				snake.sLc.pop_back();
+				power.state = 0;
+			}
+			else
+			{
+				end1();
+			}
+		}
+	for (int i = 0; i <brick.n; i++)
+		if (snake.sLc[0].x == brick.blc[i].x&&snake.sLc[0].y == brick.blc[i].y)
+		{
+			if (power.state == 1)
+			{
+				brick.blc[i].x = -30;
+				brick.blc[i].y = -30;
+				power.state = 0;
+			}
+			else
+			{
+				end1();
+			}
+		}
+}
+void spower()
+{
+	power.start = time(NULL);
+	
+	if ((power.start-power.end)>10)
+	{ 
+	power.end= time(NULL);
+	power.loc.x = rand() % (n_L/10) * 10;
+	power.loc.y = rand() % (n_W/10) * 10;
+	power.flat = 1;
+	}
+	if(power.flat==1)
+	{ 
+	setfillcolor(RED);
+	fillrectangle(power.loc.x, power.loc.y, power.loc.x + 10, power.loc.y + 10);
+	}
+}
+void eatpower()
+{
+	if (snake.sLc[0].x ==power.loc.x&&snake.sLc[0].y == power.loc.y)
+	{
+		power.flat = 0;
+		power.state = 1;
+	}
+}
+void end1()
+{
+				setbkcolor(YELLOW);
+				Sleep(100);
+				cleardevice();
+				setbkcolor(RED);
+				Sleep(100);
+				cleardevice();
+				setbkcolor(YELLOW);
+				Sleep(100);
+				cleardevice();
+				setbkcolor(RED);
+				Sleep(100);
+				cleardevice();
+				setbkcolor(YELLOW);
+				Sleep(100);
+				cleardevice();
+				settextcolor(BLACK);
+				settextstyle(10, 0, L"微软雅黑");
+				outtextxy(250, 250, L"BOOM!");
+				Sleep(100);
+				cleardevice();
+				settextstyle(20, 0, L"微软雅黑");
+				outtextxy(225, 225, L"BOOM!");
+				Sleep(100);
+				cleardevice();
+				settextstyle(30, 0, L"微软雅黑");
+				outtextxy(210, 210, L"BOOM!");
+				Sleep(100);
+				cleardevice();
+				settextstyle(50, 0, L"微软雅黑");
+				outtextxy(210, 210, L"BOOM!");
+				Sleep(100);
+				cleardevice();
+				settextstyle(60, 0, L"微软雅黑");
+				outtextxy(210, 210, L"BOOM!");
+				Sleep(100);
+				cleardevice();
+				settextstyle(80, 0, L"微软雅黑");
+				outtextxy(200, 200, L"BOOM!");
+				Sleep(100);
+				cleardevice();
+				settextstyle(100, 0, L"微软雅黑");
+				outtextxy(180, 200, L"BOOM!");
+				Sleep(100);
+				cleardevice();
+				settextstyle(150, 0, L"微软雅黑");
+				outtextxy(150, 180, L"BOOM!");
+				Sleep(100);
+				cleardevice();
+				settextstyle(160, 0, L"微软雅黑");
+				outtextxy(150, 180, L"BOOM!");
+				while (1) 
+				{
+					Sleep(60);
+					cleardevice();
+					settextstyle(180, 0, L"微软雅黑");
+					outtextxy(100, 140, L"BOOM!");
+					Sleep(60);
+					cleardevice();
+					outtextxy(120, 160, L"BOOM!");
+					Sleep(60);
+					cleardevice();
+					outtextxy(140, 160, L"BOOM!");
+					Sleep(60);
+					cleardevice();
+					outtextxy(120, 140, L"BOOM!");
+					Sleep(60);
+					end2();
+				}
+}
+void mouses()
+{
+	if (KEY_DOWN(MOUSE_MOVED))
+	{
+		GetCursorPos(&mouse_position);
+		HWND window_position = GetForegroundWindow();
+		GetWindowRect(window_position, &windows_position);
+		mouse.loc.x = mouse_position.x - windows_position.left;
+		mouse.loc.y = mouse_position.y - windows_position.top;
+	}
+}
+void gscore()
+{
+	
+	if (KEY_DOWN(MOUSE_MOVED))
+	{ 
+		GetCursorPos(&mouse_position);
+		HWND window_position = GetForegroundWindow();
+		GetWindowRect(window_position, &windows_position);
+		mouse.loc.x = mouse_position.x - windows_position.left;
+		mouse.loc.y = mouse_position.y - windows_position.top;
+		drawscore();
+		//sprintf(mouse.score, "%d", snake.n);
+		//swprintf_s(mouse.score, _T("%d"), snake.n);
+		//outtextxy(mouse.loc.x, mouse.loc.y, mouse.score);
+	}
+	
+}
+void drawscore()
+{
+	settextstyle(n_L / 10, 0,L"微软雅黑");
+	swprintf_s(mouse.score, _T("%d"), snake.n);
+	outtextxy(mouse.loc.x, mouse.loc.y, mouse.score);
+}
+
+
+void end2()
+{
+	if (_kbhit())
+	{
+		setbkcolor(BLACK);
+		cleardevice();
+		settextstyle(n_L/6, 0, L"微软雅黑");
+		settextcolor(WHITE);
+	//	swprintf_s(user.Name, _T("%c"), user.name);
+	//	outtextxy((n_L / 8), n_W / 8, user.Name);
+		outtextxy((n_L / 8), n_W / 4, L"Your score is");
+		swprintf_s(mouse.score, _T("%d"), snake.n);
+		outtextxy((n_L / 5*2), n_W / 2,mouse.score);
+		if(user.flag==1)
+		{ 
+		settextstyle(n_L / 12, 0, L"微软雅黑");
+		outtextxy((n_L / 4), n_W / 4*3, L"You did well!");
+		}
+		else
+		{
+		settextstyle(n_L / 12, 0, L"微软雅黑");
+		outtextxy((n_L / 4), n_W / 4*3, L"Try again~");
+		}
+		Sleep(1000);
+		cleardevice();
+		outtextxy((n_L / 3), n_W / 30 * 1, L"Ranking");
+		settextstyle(n_L / 18, 0, L"微软雅黑");
+		outtextxy((n_L / 8), n_W / 40 * 9, L"First");
+		drawrank(0);
+		outtextxy((n_L / 8), n_W / 40 * 12, L"Second");
+		drawrank(1);
+		outtextxy((n_L / 8), n_W / 40 * 15, L"Third");
+		drawrank(2);
+		outtextxy((n_L / 8), n_W / 40 * 18, L"Fourth");
+		drawrank(3);
+		outtextxy((n_L / 8), n_W / 40 * 21, L"Fifth");
+		drawrank(4);
+		outtextxy((n_L / 8), n_W / 40 * 24, L"Sixth");
+		drawrank(5);
+		outtextxy((n_L / 8), n_W / 40 * 27, L"Seventh");
+		drawrank(6);
+		outtextxy((n_L / 8), n_W / 40 * 30, L"Eighth");
+		drawrank(7);
+		outtextxy((n_L / 8), n_W / 40 * 33, L"Nineth");
+		drawrank(8);
+		outtextxy((n_L / 8), n_W / 40 * 36, L"Tenth");
+		drawrank(9);
+		while (1){}
+	}
+}
+void drawbutton()
+{
+}
+void main_screen()
+{
+}
+void drawrank(int i)
+{
+	file_score.len = strlen(file_score.rank[i].name) + 1;
+	file_score.Name = (wchar_t*)malloc(file_score.len * sizeof(wchar_t));
+	mbstowcs_s(&file_score.converted, file_score.Name, file_score.len, file_score.rank[i].name, _TRUNCATE);	
+	outtextxy((n_L / 7*3), n_W / 40 * (9+i*3), file_score.Name);
+	swprintf_s(file_score.number,_T("%d"),file_score.rank[i].n);
+	outtextxy((n_L / 7 * 5), n_W / 40 * (9 + i * 3), file_score.number);
+}
+void error_solution()
+{
 }
  /*****************************************************************************
  *                                shell

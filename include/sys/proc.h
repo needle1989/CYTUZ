@@ -77,19 +77,23 @@ struct task {
 #define proc2pid(x) (x - proc_table)
 
 /* Number of tasks & procs */
-#define NR_TASKS	4
-#define NR_PROCS	3
+#define NR_TASKS	5
+#define NR_PROCS	32
+#define NR_NATIVE_PROCS	4
 #define FIRST_PROC	proc_table[0]
 #define LAST_PROC	proc_table[NR_TASKS + NR_PROCS - 1]
 
 /* stacks of tasks */
-#define STACK_SIZE_TTY		0x8000
-#define STACK_SIZE_SYS		0x8000
-#define STACK_SIZE_HD		0x8000
-#define STACK_SIZE_FS		0x8000
-#define STACK_SIZE_TESTA	0x8000
-#define STACK_SIZE_TESTB	0x8000
-#define STACK_SIZE_TESTC	0x8000
+#define STACK_SIZE_TTY		 0x8000
+#define STACK_SIZE_SYS		 0x8000
+#define STACK_SIZE_HD		 0x8000
+#define STACK_SIZE_FS		 0x8000
+#define STACK_SIZE_TESTA	 0x8000
+#define STACK_SIZE_TESTB	 0x8000
+#define STACK_SIZE_TESTC	 0x8000
+#define PROCS_BASE		 0xA00000 /* 10 MB */
+#define PROC_IMAGE_SIZE_DEFAULT 0x100000 /*  1 MB */
+#define PROC_ORIGIN_STACK	 0x400    /*  1 KB */
 
 #define STACK_SIZE_TOTAL	(STACK_SIZE_TTY + \
 				STACK_SIZE_SYS + \
