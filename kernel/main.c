@@ -2,7 +2,7 @@
 /*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
                             main.c
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-                                                    Forrest Yu, 2005
+                                                    OS Team for CYTUZ, 2020
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 
 #include "type.h"
@@ -198,8 +198,6 @@ void clearArr(char *arr, int length)
 void printTitle()
 {
     clear(); 	
-
-  //  disp_color_str("dddddddddddddddd\n", 0x9);
     if(current_console==0){
     	displayWelcomeInfo();
     }
@@ -353,211 +351,7 @@ void ProcessManage()
     printf("=============================================================================\n");
 }
 
-//游戏运行库
-unsigned int _seed2 = 0xDEADBEEF;
 
-void srand(unsigned int seed){
-	_seed2 = seed;
-}
-
-int rand() {
-	int next = _seed2;
-	int result;
-
-	next *= 1103515245;
-	next += 12345;
-	result = (next / 65536) ;
-
-	next *= 1103515245;
-	next += 12345;
-	result <<= 10;
-	result ^= (next / 65536) ;
-
-	next *= 1103515245;
-	next += 12345;
-	result <<= 10;
-	result ^= (next / 65536) ;
-
-	_seed2 = next;
-
-	return result>0 ? result : -result;
-}
-
-void show_mat(int *mat,int *mat_state, int touch_x,int touch_y,int display){
-	int x, y;
-	for (x = 0; x < 10; x++){
-		printf("  %d", x);
-	}
-	printf("\n");
-	for (x = 0; x < 10; x++){
-		printf("---");
-	}
-	for (x = 0; x < 10; x++){
-		printf("\n%d|", x);
-		for (y = 0; y < 10; y++){
-			if (mat_state[x * 10 + y] == 0){				
-					if (x == touch_x && y == touch_y)
-						printf("*  ");
-					else if (display!=0 && mat[x * 10 + y] == 1)
-						printf("#  ");
-					else
-						printf("-  ");
-				
-			}
-			else if (mat_state[x * 10 + y] == -1){
-				printf("O  ");
-			}
-			else{
-				printf("%d  ", mat_state[x * 10 + y]);
-			}
-			
-		}
-	}
-	printf("\n");
-}
-
-void init_game(int *mat, int mat_state[100]){
-	int sum = 0;
-	int x, y;
-	for (x = 0; x < 100; x++)
-		mat[x] = mat_state[x] = 0;
-	while (sum < 15){
-		x = rand() % 10;
-		y = rand() % 10;
-		if (mat[x * 10 + y] == 0){
-			sum++;
-			mat[x * 10 + y] = 1;
-		}
-	}
-	show_mat(mat,mat_state,-1,-1,0);
-	/*for (x = 0; x < 10; x++){
-		printf("  %d", x);
-	}
-	for (x = 0; x < 10; x++){
-		printf("\n%d ", x);
-		for (y = 0; y < 10; y++){
-			printf("%d  ", mat[x * 10 + y]);
-		}
-	}
-	printf("\n");*/
-}
-
-int check(int x, int y, int *mat){
-	int i, j,now_x,now_y,result = 0;
-	for (i = -1; i <= 1; i++){
-		for (j = -1; j <= 1; j++){
-			if (i == 0 && j == 0)
-				continue;
-			now_x = x + i;
-			now_y = y + j;
-			if (now_x >= 0 && now_x < 10 && now_y >= 0 && now_y <= 9){
-				if (mat[now_x * 10 + now_y] == 1)
-					result++;
-			}
-		}
-	}
-	return result;
-}
-
-void dfs(int x, int y, int *mat, int *mat_state,int *left_coin){
-	int i, j, now_x, now_y,temp;
-	if (mat_state[x*10+y] != 0)
-		return;
-	(*left_coin)--;
-	temp = check(x, y,mat);
-	if (temp != 0){
-		mat_state[x * 10 + y] = temp;
-	}
-	else{
-		mat_state[x * 10 + y] = -1;
-		for (i = -1; i <= 1; i++){
-			for (j = -1; j <= 1; j++){
-				if (i == 0 && j == 0)
-					continue;
-				now_x = x + i;
-				now_y = y + j;
-				if (now_x >= 0 && now_x < 10 && now_y >= 0 && now_y <= 9){				
-					dfs(now_x, now_y,mat,mat_state,left_coin);
-				}
-			}
-		}
-	}
-}
-
-void game(int fd_stdin){
-	int mat[100] = { 0 };
-	int mat_state[100] = { 0 };
-	char keys[128];
-	int x, y, left_coin = 100,temp;
-	int flag = 1;
-	
-	while (flag == 1){
-		init_game(mat, mat_state);
-		left_coin = 100;
-
-		printf("-------------------------------------------\n\n");
-		printf("Input next x and y: ");
-
-		while (left_coin != 15){
-
-			clearArr(keys, 128);
-            int r = read(fd_stdin, keys, 128);
-            if(keys[0]>'9'||keys[0]<'0'||keys[1]!=' '||keys[2]>'9'||keys[2]<'0'||keys[3]!=0){
-            	printf("Please input again!\n");
-				continue;
-            } 
-            x = keys[0]-'0';
-            y = keys[2]-'0';
-			if (x < 0 || x>9 || y < 0 || y>9){
-				printf("Please input again!\n");
-				continue;
-			}
-
-			if (mat[x * 10 + y] == 1){
-				break;
-			}
-			else{
-				dfs(x, y, mat, mat_state, &left_coin);
-				if (left_coin <= 15)
-					break;
-				show_mat(mat, mat_state, -1, -1, 0);
-				printf("-------------------------------------------\n\n");
-				printf("Input next x and y: ");
-				/*printf("%d\n", left_coin);
-				for (x = 0; x < 10; x++){
-
-					printf("  %d", x);
-				}
-				for (x = 0; x < 10; x++){
-					printf("\n%d ", x);
-					for (y = 0; y < 10; y++){
-						printf("%d  ", mat[x * 10 + y]);
-					}
-				}
-				printf("\n\n");*/
-			}
-		}
-		if (mat[x * 10 + y] == 1){
-			printf("\n\nFAIL!\n");
-			show_mat(mat, mat_state, x, y, 1);
-		}
-		else{
-			printf("\n\nSUCCESS!\n");
-			show_mat(mat, mat_state, -1, -1, 1);
-		}
-
-		printf("Do you want to continue?(yes ot no)\n");
-		clearArr(keys, 128);
-        int r = read(fd_stdin, keys, 128);
-      //  printf("%s\n",keys);
-        if (keys[0]=='n' && keys[1]=='o' && keys[2]==0)
-        {
-        	flag = 0;
-        //	printf("%s\n",keys);
-            break;
-        }
-	}	
-}
 /*****************************************************************************
  *                                game code for Minesweeper
  *****************************************************************************/
@@ -568,7 +362,7 @@ void game(int fd_stdin){
 char mine[rows][cols];
 char show[rows][cols];
 
-void sl_init()
+void m_init()
 {
 	int i = 0;
 	int j = 0;
@@ -582,7 +376,7 @@ void sl_init()
 	}
 }
 
-void sl_set_mine()
+void m_set_mine()
 {
     int x = 0;
     int y = 0;
@@ -600,16 +394,16 @@ void sl_set_mine()
 }
 
 
-void sl_display(char a[rows][cols])
+void m_display(char a[rows][cols])
 {
 	clear();
 	printf("   |=========================================================================|\n");
 	printf("   |======================= Minesweeper for CYTUZ ===========================|\n");
 	printf("   |=========================================================================|\n");
-	printf("   |                                   1. 10 bombs total                     |\n");
-	printf("   |                              2. Enter 1-9 row number                    |\n");
-	printf("   |                         3. Enter 1-9 col number                         |\n");
-	printf("   |                    4. Enter q to quit                                   |\n");
+	printf("   |                 A long time ago in a galaxy far,far away...             |\n");
+	printf("   | YOU need to sweep Imperial minefield to deliver Death Star blueprints!  |\n");
+	printf("   |                   The fate of galaxy is at your hands!                  |\n");
+	printf("   |                           Enter q to quit                               |\n");
 	printf("   |=========================================================================|\n");
 	printf("   |=========================================================================|\n");
 	int i = 0;
@@ -633,7 +427,7 @@ void sl_display(char a[rows][cols])
 }
 
   
-int sl_get_num(int x, int y)
+int m_get_num(int x, int y)
 {
 	int count = 0;
 	if (mine[x - 1][y - 1] == '1')
@@ -671,7 +465,7 @@ int sl_get_num(int x, int y)
 	return  count;
 }
   
-int sl_sweep()
+int m_sweep()
 {
 	int count = 0;
 	int x = 0, y = 0;
@@ -710,21 +504,21 @@ int sl_sweep()
 
 		if (mine[x][y] == '1')
 		{
-			sl_display(mine);
+			m_display(mine);
 			printf("Nerf this! Game Over!\n");
 
 			return 0;
 		}
 		else
 		{
-			int ret = sl_get_num(x, y);
+			int ret = m_get_num(x, y);
 			show[x][y] = ret + '0';
-			sl_display(show);
+			m_display(show);
 			count++;
 		}
 	}
 	printf("YOU WIN!\n");
-	sl_display(mine);
+	m_display(mine);
 	return 0;
 }
 
@@ -733,20 +527,20 @@ int runMine(fd_stdin, fd_stdout)
 	printf("   |=========================================================================|\n");
 	printf("   |======================= Minesweeper for CYTUZ ===========================|\n");
 	printf("   |=========================================================================|\n");
-	printf("   |                                   1. 10 bombs total                     |\n");
-	printf("   |                              2. Enter 1-9 row number                    |\n");
-	printf("   |                         3. Enter 1-9 col number                         |\n");
-	printf("   |                    4. Enter q to quit                                   |\n");
+	printf("   |                 A long time ago in a galaxy far,far away...             |\n");
+	printf("   | YOU need to sweep Imperial minefield to deliver Death Star blueprints!  |\n");
+	printf("   |                   The fate of galaxy is at your hands!                  |\n");
+	printf("   |                           Enter q to quit                               |\n");
 	printf("   |=========================================================================|\n");
 	printf("   |=========================================================================|\n");
         
 	
 	
 
-	sl_init();
-	sl_set_mine();
-	sl_display(show);
-	sl_sweep();
+	m_init();
+	m_set_mine();
+	m_display(show);
+	m_sweep();
 
 	printf("\nEnter anything to continue...");
 	char rdbuf[128];
