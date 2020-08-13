@@ -198,6 +198,8 @@ void clearArr(char *arr, int length)
 void printTitle()
 {
     clear(); 	
+
+  //  disp_color_str("dddddddddddddddd\n", 0x9);
     if(current_console==0){
     	displayWelcomeInfo();
     }
@@ -351,7 +353,35 @@ void ProcessManage()
     printf("=============================================================================\n");
 }
 
+//游戏运行库
+unsigned int _seed2 = 0xDEADBEEF;
 
+void srand(unsigned int seed){
+	_seed2 = seed;
+}
+
+int rand() {
+	int next = _seed2;
+	int result;
+
+	next *= 1103515245;
+	next += 12345;
+	result = (next / 65536) ;
+
+	next *= 1103515245;
+	next += 12345;
+	result <<= 10;
+	result ^= (next / 65536) ;
+
+	next *= 1103515245;
+	next += 12345;
+	result <<= 10;
+	result ^= (next / 65536) ;
+
+	_seed2 = next;
+
+	return result>0 ? result : -result;
+}
 /*****************************************************************************
  *                                game code for Minesweeper
  *****************************************************************************/
