@@ -2,7 +2,7 @@
 /*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
                             main.c
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-                                                    Forrest Yu, 2005
+                                                    OS Team for CYTUZ, 2020
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 
 #include "type.h"
@@ -335,6 +335,8 @@ void help()
     printf("   |                                                                         |\n");
     printf("   |************************* COMMANDS FOR USER APPLICATIONS ****************|\n");
     printf("   |                        minesweeper : Launch Minesweeper                 |\n");
+    printf("   |                              snake : Launch SnakeGame                   |\n");
+    printf("   |                              gobang : Launch GoBangGame                   |\n");
     printf("   |=========================================================================|\n");
 }
 
@@ -382,182 +384,6 @@ int rand() {
 
 	return result>0 ? result : -result;
 }
-
-void show_mat(int *mat,int *mat_state, int touch_x,int touch_y,int display){
-	int x, y;
-	for (x = 0; x < 10; x++){
-		printf("  %d", x);
-	}
-	printf("\n");
-	for (x = 0; x < 10; x++){
-		printf("---");
-	}
-	for (x = 0; x < 10; x++){
-		printf("\n%d|", x);
-		for (y = 0; y < 10; y++){
-			if (mat_state[x * 10 + y] == 0){				
-					if (x == touch_x && y == touch_y)
-						printf("*  ");
-					else if (display!=0 && mat[x * 10 + y] == 1)
-						printf("#  ");
-					else
-						printf("-  ");
-				
-			}
-			else if (mat_state[x * 10 + y] == -1){
-				printf("O  ");
-			}
-			else{
-				printf("%d  ", mat_state[x * 10 + y]);
-			}
-			
-		}
-	}
-	printf("\n");
-}
-
-void init_game(int *mat, int mat_state[100]){
-	int sum = 0;
-	int x, y;
-	for (x = 0; x < 100; x++)
-		mat[x] = mat_state[x] = 0;
-	while (sum < 15){
-		x = rand() % 10;
-		y = rand() % 10;
-		if (mat[x * 10 + y] == 0){
-			sum++;
-			mat[x * 10 + y] = 1;
-		}
-	}
-	show_mat(mat,mat_state,-1,-1,0);
-	/*for (x = 0; x < 10; x++){
-		printf("  %d", x);
-	}
-	for (x = 0; x < 10; x++){
-		printf("\n%d ", x);
-		for (y = 0; y < 10; y++){
-			printf("%d  ", mat[x * 10 + y]);
-		}
-	}
-	printf("\n");*/
-}
-
-int check(int x, int y, int *mat){
-	int i, j,now_x,now_y,result = 0;
-	for (i = -1; i <= 1; i++){
-		for (j = -1; j <= 1; j++){
-			if (i == 0 && j == 0)
-				continue;
-			now_x = x + i;
-			now_y = y + j;
-			if (now_x >= 0 && now_x < 10 && now_y >= 0 && now_y <= 9){
-				if (mat[now_x * 10 + now_y] == 1)
-					result++;
-			}
-		}
-	}
-	return result;
-}
-
-void dfs(int x, int y, int *mat, int *mat_state,int *left_coin){
-	int i, j, now_x, now_y,temp;
-	if (mat_state[x*10+y] != 0)
-		return;
-	(*left_coin)--;
-	temp = check(x, y,mat);
-	if (temp != 0){
-		mat_state[x * 10 + y] = temp;
-	}
-	else{
-		mat_state[x * 10 + y] = -1;
-		for (i = -1; i <= 1; i++){
-			for (j = -1; j <= 1; j++){
-				if (i == 0 && j == 0)
-					continue;
-				now_x = x + i;
-				now_y = y + j;
-				if (now_x >= 0 && now_x < 10 && now_y >= 0 && now_y <= 9){				
-					dfs(now_x, now_y,mat,mat_state,left_coin);
-				}
-			}
-		}
-	}
-}
-
-void game(int fd_stdin){
-	int mat[100] = { 0 };
-	int mat_state[100] = { 0 };
-	char keys[128];
-	int x, y, left_coin = 100,temp;
-	int flag = 1;
-	
-	while (flag == 1){
-		init_game(mat, mat_state);
-		left_coin = 100;
-
-		printf("-------------------------------------------\n\n");
-		printf("Input next x and y: ");
-
-		while (left_coin != 15){
-
-			clearArr(keys, 128);
-            int r = read(fd_stdin, keys, 128);
-            if(keys[0]>'9'||keys[0]<'0'||keys[1]!=' '||keys[2]>'9'||keys[2]<'0'||keys[3]!=0){
-            	printf("Please input again!\n");
-				continue;
-            } 
-            x = keys[0]-'0';
-            y = keys[2]-'0';
-			if (x < 0 || x>9 || y < 0 || y>9){
-				printf("Please input again!\n");
-				continue;
-			}
-
-			if (mat[x * 10 + y] == 1){
-				break;
-			}
-			else{
-				dfs(x, y, mat, mat_state, &left_coin);
-				if (left_coin <= 15)
-					break;
-				show_mat(mat, mat_state, -1, -1, 0);
-				printf("-------------------------------------------\n\n");
-				printf("Input next x and y: ");
-				/*printf("%d\n", left_coin);
-				for (x = 0; x < 10; x++){
-
-					printf("  %d", x);
-				}
-				for (x = 0; x < 10; x++){
-					printf("\n%d ", x);
-					for (y = 0; y < 10; y++){
-						printf("%d  ", mat[x * 10 + y]);
-					}
-				}
-				printf("\n\n");*/
-			}
-		}
-		if (mat[x * 10 + y] == 1){
-			printf("\n\nFAIL!\n");
-			show_mat(mat, mat_state, x, y, 1);
-		}
-		else{
-			printf("\n\nSUCCESS!\n");
-			show_mat(mat, mat_state, -1, -1, 1);
-		}
-
-		printf("Do you want to continue?(yes ot no)\n");
-		clearArr(keys, 128);
-        int r = read(fd_stdin, keys, 128);
-      //  printf("%s\n",keys);
-        if (keys[0]=='n' && keys[1]=='o' && keys[2]==0)
-        {
-        	flag = 0;
-        //	printf("%s\n",keys);
-            break;
-        }
-	}	
-}
 /*****************************************************************************
  *                                game code for Minesweeper
  *****************************************************************************/
@@ -568,7 +394,7 @@ void game(int fd_stdin){
 char mine[rows][cols];
 char show[rows][cols];
 
-void sl_init()
+void m_init()
 {
 	int i = 0;
 	int j = 0;
@@ -582,7 +408,7 @@ void sl_init()
 	}
 }
 
-void sl_set_mine()
+void m_set_mine()
 {
     int x = 0;
     int y = 0;
@@ -600,16 +426,16 @@ void sl_set_mine()
 }
 
 
-void sl_display(char a[rows][cols])
+void m_display(char a[rows][cols])
 {
 	clear();
 	printf("   |=========================================================================|\n");
 	printf("   |======================= Minesweeper for CYTUZ ===========================|\n");
 	printf("   |=========================================================================|\n");
-	printf("   |                                   1. 10 bombs total                     |\n");
-	printf("   |                              2. Enter 1-9 row number                    |\n");
-	printf("   |                         3. Enter 1-9 col number                         |\n");
-	printf("   |                    4. Enter q to quit                                   |\n");
+	printf("   |                 A long time ago in a galaxy far,far away...             |\n");
+	printf("   | YOU need to sweep Imperial minefield to deliver Death Star blueprints!  |\n");
+	printf("   |                   The fate of galaxy is at your hands!                  |\n");
+	printf("   |                           Enter q to quit                               |\n");
 	printf("   |=========================================================================|\n");
 	printf("   |=========================================================================|\n");
 	int i = 0;
@@ -633,7 +459,7 @@ void sl_display(char a[rows][cols])
 }
 
   
-int sl_get_num(int x, int y)
+int m_get_num(int x, int y)
 {
 	int count = 0;
 	if (mine[x - 1][y - 1] == '1')
@@ -671,7 +497,7 @@ int sl_get_num(int x, int y)
 	return  count;
 }
   
-int sl_sweep()
+int m_sweep()
 {
 	int count = 0;
 	int x = 0, y = 0;
@@ -710,21 +536,21 @@ int sl_sweep()
 
 		if (mine[x][y] == '1')
 		{
-			sl_display(mine);
+			m_display(mine);
 			printf("Nerf this! Game Over!\n");
 
 			return 0;
 		}
 		else
 		{
-			int ret = sl_get_num(x, y);
+			int ret = m_get_num(x, y);
 			show[x][y] = ret + '0';
-			sl_display(show);
+			m_display(show);
 			count++;
 		}
 	}
 	printf("YOU WIN!\n");
-	sl_display(mine);
+	m_display(mine);
 	return 0;
 }
 
@@ -733,20 +559,20 @@ int runMine(fd_stdin, fd_stdout)
 	printf("   |=========================================================================|\n");
 	printf("   |======================= Minesweeper for CYTUZ ===========================|\n");
 	printf("   |=========================================================================|\n");
-	printf("   |                                   1. 10 bombs total                     |\n");
-	printf("   |                              2. Enter 1-9 row number                    |\n");
-	printf("   |                         3. Enter 1-9 col number                         |\n");
-	printf("   |                    4. Enter q to quit                                   |\n");
+	printf("   |                 A long time ago in a galaxy far,far away...             |\n");
+	printf("   | YOU need to sweep Imperial minefield to deliver Death Star blueprints!  |\n");
+	printf("   |                   The fate of galaxy is at your hands!                  |\n");
+	printf("   |                           Enter q to quit                               |\n");
 	printf("   |=========================================================================|\n");
 	printf("   |=========================================================================|\n");
         
 	
 	
 
-	sl_init();
-	sl_set_mine();
-	sl_display(show);
-	sl_sweep();
+	m_init();
+	m_set_mine();
+	m_display(show);
+	m_sweep();
 
 	printf("\nEnter anything to continue...");
 	char rdbuf[128];
@@ -760,6 +586,470 @@ int runMine(fd_stdin, fd_stdout)
 	printf("\n");
 	return 0;
 }
+
+/*======================================================================*
+                            snake game
+ *======================================================================*/
+
+int quitSnake = 0;  
+
+PUBLIC void judgeInpt(u32 key) 
+{
+    char output[2] = {'\0', '\0'};
+    if (!key) 
+    {
+        output[0] = key & 0xFF;
+        if(output[0] == 'a') changeToLeft();
+        if(output[0] == 's') changeToDown();
+        if(output[0] == 'd') changeToRight();
+        if(output[0] == 'w') changeToUp();
+    }
+}
+
+int listenerStart = 0;
+
+struct Snake
+{   //every node of the snake 
+    int x, y;  
+    int now;   //0,1,2,3 means left right up down   
+}Snake[15*35];  //Snake[0] is the head，and the other nodes are recorded in inverted order，eg: Snake[1] is the tail
+
+
+//change the direction of circle
+void changeToLeft()
+{
+    if(listenerStart == 1)
+    {
+        Snake[0].now = 0;
+        listenerStart = 0;
+    }
+}
+
+void changeToDown()
+{
+    if(listenerStart == 1)
+    {
+        Snake[0].now = 3;
+        listenerStart = 0;
+    }
+}
+
+void changeToRight()
+{
+    if(listenerStart == 1)
+    {
+        Snake[0].now = 1;
+        listenerStart = 0;
+    }
+}
+void changeToUp()
+{
+    if(listenerStart == 1)
+    {
+        Snake[0].now = 2;
+        listenerStart = 0;
+    }
+}
+
+const int mapH = 15;
+const int mapW = 35;
+char sHead = '@';
+char sBody = 'O';
+char sFood = '$';
+char sNode = '.';    
+char Map[15][35]; // the map of snake
+int food[15][2] = {{5, 13},{6, 10}, {17, 15}, {8, 9}, {3, 4}, {1,12}, {0, 2}, {5, 23},
+                   {15, 13},{16, 10}, {7, 15}, {8, 19}, {3, 14}, {11,12}, {10, 2}};
+int foodNum = 0;
+int eat = -1;
+int win = 15;  // the length of win
+ 
+int sLength = 1;
+int overOrNot = 0;
+int dx[4] = {0, 0, -1, 1};  
+int dy[4] = {-1, 1, 0, 0}; 
+
+void initGame(); 
+void initFood();
+void s_show();
+void move();
+void checkBorder();
+void checkHead(int x, int y);
+void action();
+void showGameSuccess();
+void showGameSuccess();
+/**
+ * enter the snake game
+ */
+void snakeGame()
+{
+    clear();
+    initGame();  
+    s_show(); 
+}
+/**
+ * init game
+ */
+void initGame() 
+{
+    printf("===============================================================================\n");
+    printf("                                        Snake                                  \n");
+    printf("===============================================================================\n");
+    printf("                                                                               \n");
+    printf("                     press 'A''D''W''S' to control snake's direction.          \n");
+    printf("                                                                               \n");
+    printf("===============================================================================\n\n");
+
+    int i, j;  
+    int headx = 5;
+    int heady = 10;
+    memset(Map, '.', sizeof(Map));   //init map with '.'
+    Map[headx][heady] = sHead;  
+    Snake[0].x = headx;  
+    Snake[0].y = heady;  
+    Snake[0].now = -1;
+    initFood();   //init target 
+    for(i = 0; i < mapH; i++)
+    {
+        for(j = 0; j < mapW; j++) printf("%c", Map[i][j]);  
+        printf("\n");  
+    } 
+   
+    listenerStart = 1;
+    while(listenerStart);
+}
+
+/**
+ * the food location
+ */
+void initFood()
+{
+    int fx, fy;
+    int tick;  
+    while(1)
+    {
+        tick = get_ticks();
+        fx = tick%mapH;
+        fy = tick%mapW;     
+        if(Map[fx][fy] == '.')
+        {
+            eat++;
+            Map[fx][fy] = sFood;  
+            break;  
+        }
+        foodNum++;
+    }
+}
+
+/**
+ * show game situation
+ */
+void s_show()
+{
+    int i, j; 
+    printf("Load snake game ...");
+    while(1)
+    {
+        listenerStart = 1;
+
+        if(eat < 5)
+        {
+            milli_delay(8000);
+        }
+        else if(eat < 10)
+        {
+            milli_delay(6000);
+        }
+        else
+        {
+            milli_delay(5000);
+        }
+        move();  
+        if(overOrNot || quitSnake) 
+        {
+            showGameOver();
+            milli_delay(50000);
+            clear();
+            break;  
+        } 
+        if(eat == win)
+        {
+            showGameSuccess();
+            milli_delay(50000);
+            clear();
+            break;
+        }
+        clear();
+        for(i = 0; i < mapH; i++)   
+        {   
+            for(j = 0; j < mapW; j++)printf("%c", Map[i][j]);  
+            printf("\n");  
+        }  
+
+        printf("           Have fun!\n");
+        printf("       You have ate:%d\n",eat);
+    }  
+}
+/**
+ * snake move function
+ */
+void move()
+{
+    int i, x, y;  
+    int t = sLength;
+    x = Snake[0].x;  
+    y = Snake[0].y;  
+    Snake[0].x = Snake[0].x + dx[Snake[0].now]; 
+    Snake[0].y = Snake[0].y + dy[Snake[0].now];  
+
+    Map[x][y] = '.'; 
+    checkBorder(); 
+    checkHead(x, y);   
+    if(sLength == t)  //did not eat
+        for(i = 1; i < sLength; i++)
+        {
+            if(i == 1) Map[Snake[i].x][Snake[i].y] = '.'; //tail 
+     
+            if(i == sLength-1)  //the node after the head 
+            {  
+                Snake[i].x = x;  
+                Snake[i].y = y;  
+                Snake[i].now = Snake[0].now;  
+            }  
+            else 
+            {  
+                Snake[i].x = Snake[i+1].x;  
+                Snake[i].y = Snake[i+1].y;  
+                Snake[i].now = Snake[i+1].now;  
+            }  
+            Map[Snake[i].x][Snake[i].y] = sBody;  
+        }  
+}
+/**
+ *
+ */
+void checkBorder()
+{
+    if(Snake[0].x < 0 || Snake[0].x >= mapH || Snake[0].y < 0 || Snake[0].y >= mapW)
+    {
+        printl("game over!");
+        overOrNot = 1;  
+    }
+    
+}
+/**
+ *
+ * @param x
+ * @param y
+ */
+void checkHead(int x, int y)
+{
+    if(Map[Snake[0].x][Snake[0].y] == '.') Map[Snake[0].x][Snake[0].y] = sHead ;  
+    else if(Map[Snake[0].x][Snake[0].y] == sFood) 
+    {
+        Map[Snake[0].x][Snake[0].y] = sHead ;    
+        Snake[sLength].x = x;                //new node
+        Snake[sLength].y = y;  
+        Snake[sLength].now = Snake[0].now;  
+        Map[Snake[sLength].x][Snake[sLength].y] = sBody;   
+        sLength++;  
+        initFood();  
+    }  
+    else
+    { 
+        overOrNot = 1; 
+    }
+}
+/**
+ *
+ */
+void showGameOver()
+{
+    printf("===============================================================================\n");
+    printf("                                  Game Over                                    \n");
+    printf("                                  will exit soon...                            \n");
+    printf("===============================================================================\n");
+}
+
+/**
+ *
+ */
+void showGameSuccess()
+{
+    printf("===============================================================================\n");
+    printf("                               Congratulation!                                 \n");
+    printf("                                  will exit soon...                            \n");
+    printf("===============================================================================\n");
+}
+
+
+void calculator()
+{
+    printf("===============================================================================\n");
+    printf("                                     Calculator                                \n");
+    printf("===============================================================================\n");
+    printf("                                                                               \n");
+    printf("                                   Enter e to quit                             \n");
+    printf("                                                                               \n");
+    printf("===============================================================================\n\n");
+    while(1)
+    {   
+        char result;
+
+        char bufr[128];
+        read(0, bufr, 128);
+
+
+        switch(bufr[1])
+        {
+
+            case '+':result=(bufr[0] - '0')+(bufr[2] - '0');break;
+
+            case '-':result=(bufr[0] - '0')-(bufr[2] - '0');break;
+
+            case '*':result=(bufr[0] - '0')*(bufr[2] - '0');break;
+
+            case '/':result=(bufr[0] - '0')/(bufr[2] - '0');break;
+        
+        }
+        if(bufr[0]=='e') break;
+        else printf("%d %c %d = %d\n",(bufr[0] - '0'),bufr[1],(bufr[2] - '0'),result);
+    }
+}
+/*========================================================================*
+                            Gobang game
+ *=========================================================================*/
+
+#define N  9
+int chessboard[N + 1][N + 1] = { 0 };
+
+//用来记录轮到玩家1还是玩家2
+int whoseTurn = 0;
+
+void initGame(void);
+void printChessboard(void);
+void playChess(void);
+int GobangJudge(int, int);
+int stop=0;
+
+void Gobang()
+{
+    //初始化游戏
+    printf("===============================================================================\n");
+    printf("                                       Gobang                                  \n");
+    printf("===============================================================================\n");
+    printf("                                                                               \n");
+    printf("                      Enter 'e' to quit, enter x and y to put chess.           \n");
+    printf("                                                                               \n");
+    printf("===============================================================================\n\n");
+    //清空棋盘
+    int i, j;
+    for (i = 0; i <= N; i++)
+        for (j = 0; j <= N; j++)
+        {
+            chessboard[i][j] = 0;
+        }
+    printChessboard();
+
+    whoseTurn = 0;
+    stop=0;
+    chessboard[N + 1][N + 1] =0;
+    printf("Player1:");
+    while (1)
+    {
+        //玩家轮流下子
+        whoseTurn++;
+        playChess();
+        if(stop==1)break;
+    }
+    stop=0;
+    return 0;
+}
+
+void printChessboard(void)
+{
+    int i, j;
+
+    for (i = 0; i <= N; i++)
+    {
+        for (j = 0; j <= N; j++)
+        {
+            if (0 == i) printf("%3d", j);
+            else if (j == 0) printf("%3d", i);
+            else if (1 == chessboard[i][j]) printf("  F");
+            else if (2 == chessboard[i][j]) printf("  T");
+            else printf("  -");
+        }
+        printf("\n");
+    }
+}
+
+void playChess(void)
+{
+    int i, j;
+    char bufr[128];
+    read(0, bufr, 128);
+
+    if (1 == whoseTurn % 2)
+    {
+        
+        i = bufr[0] - '0';
+        j = bufr[2] - '0';
+        chessboard[i][j] = 1;
+    }
+    if (0 == whoseTurn % 2)
+    {
+        
+        i = bufr[0] - '0';
+        j = bufr[2] - '0';
+        chessboard[i][j] = 2;
+    }
+
+    if(bufr[0]=='e') stop=1;
+    else
+    {
+        printChessboard();
+        if (1 == whoseTurn % 2) printf("Player2:");
+        else printf("Player1:");
+    }
+    if (GobangJudge(i, j))
+    {
+        if (1 == whoseTurn % 2) printf("Player1 win!\n");
+        else printf("Player2 win!\n");
+        stop=1;
+    }
+    
+}
+
+int GobangJudge(int x, int y)
+{
+    int i, j;
+    int t = 2 - whoseTurn % 2;
+
+    for (i = x - 4, j = y; i <= x; i++)
+    {
+        if (i >= 1 && i <= N - 4 && t == chessboard[i][j] && t == chessboard[i + 1][j] && t == chessboard[i + 2][j] && t == chessboard[i + 3][j] && t == chessboard[i + 4][j])
+            return 1;
+    }
+    for (i = x, j = y - 4; j <= y; j++)
+    {
+        if (j >= 1 && j <= N - 4 && t == chessboard[i][j] && t == chessboard[i][j + 1] && t == chessboard[i][j + 1] && t == chessboard[i][j + 3] && t == chessboard[i][j + 4])
+            return 1;
+    }
+    for (i = x - 4, j = y - 4; i <= x, j <= y; i++, j++)
+    {
+        if (i >= 1 && i <= N - 4 && j >= 1 && j <= N - 4 && t == chessboard[i][j] && t == chessboard[i + 1][j + 1] && t == chessboard[i + 2][j + 2] && t == chessboard[i + 3][j + 3] && t == chessboard[i + 4][j + 4])
+            return 1;
+    }
+    for (i = x + 4, j = y - 4; i >= 1, j <= y; i--, j++)
+    {
+        if (i >= 1 && i <= N - 4 && j >= 1 && j <= N - 4 && t == chessboard[i][j] && t == chessboard[i - 1][j + 1] && t == chessboard[i - 2][j + 2] && t == chessboard[i - 3][j + 3] && t == chessboard[i - 4][j + 4])
+            return 1;
+    }
+
+    return 0;
+}
+
  /*****************************************************************************
  *                                shell
  *****************************************************************************/
@@ -847,6 +1137,14 @@ void shell(char *tty_name){
         else if (strcmp(cmd, "clear") == 0)
         {
             printTitle();
+        }
+        else if (strcmp(cmd, "snake") == 0)
+        {
+        	snakeGame();
+        }
+        else if (strcmp(cmd, "gobang") == 0)
+        {
+        	Gobang();
         }
         else if (strcmp(cmd, "ls") == 0)
         {
