@@ -80,9 +80,13 @@ struct inode {
 	u8	_unused[16];	/**< Stuff for alignment */
 
 	/* the following items are only present in memory */
+	
 	int	i_dev;
 	int	i_cnt;		/**< How many procs share this inode  */
 	int	i_num;		/**< inode nr.  */
+	
+	u32 i_node_length;            /**< sect lenghth */
+	u32 i_sects_pos[20];         /**< sect pos array */
 };
 
 /**
@@ -111,6 +115,7 @@ struct dir_entry {
 	int     created_time;
 	int     changed_time;
 	char 	pass[16];
+	char type;
 };
 
 /**

@@ -44,7 +44,7 @@ struct proc {
 				    * process flags.
 				    * A proc is runnable iff p_flags==0
 				    */
-
+	int run_state;		    /*a proc is running if run_state==1*/
 	MESSAGE * p_msg;
 	int p_recvfrom;
 	int p_sendto;
